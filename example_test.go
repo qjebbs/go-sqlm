@@ -1,0 +1,174 @@
+package sqlm_test
+
+//go:generate go run github.com/qjebbs/go-sqlm/cmd/sqlbgen -selectable .
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/qjebbs/go-sqlb"
+	"github.com/qjebbs/go-sqlb/dialect"
+	"github.com/qjebbs/go-sqlf/v4"
+	"github.com/qjebbs/go-sqlm"
+)
+
+func Example_cRUD() {
+	// Model represents the base model with common fields.
+	type Model struct {
+		// ID is the model ID.
+		// model tag is required for Load / Update / Delete / Insert operations.
+		// pk means primary key.
+		// returning means the ID will be returned after insertion.
+		ID int64 `sqlb:"model;col:id;pk;returning"`
+		// Created is the creation time.
+		// readonly means this field will be excluded from INSERT / UPDATE, created usually set by DB default value.
+		Created *time.Time `sqlb:"col:created;readonly"`
+		// Updated is the last update time.
+		// conflict_set means when inserting an existing record, the Updated will be updated.
+		Updated *time.Time `sqlb:"col:updated;conflict_set"`
+		// soft_delete indicates this column is used for soft deletion.
+		// When deleting, the column will be set to current time or true instead of actually deleting the record.
+		// When loading, records with non-zero value in this column will be ignored.
+		// conflict_set means when inserting an deleted record, undelete it.
+		Deleted *time.Time `sqlb:"col:deleted;soft_delete;conflict_set"`
+	}
+
+	type User struct {
+		// The value defined by 'tables' and 'from' can be inherited by nested fields
+		// and by subsequent sibling fields of the current struct.
+		Model `sqlb:"table:users"`
+		// unique indicates this column has a unique constraint, which can be used to locate records for Load / Delete operation.
+		// conflict_on indicates the column(s) to check for conflict during insert.
+		Email string `sqlb:"col:email;required;unique;conflict_on"`
+		// conflict_set without value means to use excluded column value
+		Name string `sqlb:"col:name;conflict_set"`
+	}
+
+	ctx := sqlb.NewContext(context.Background(), dialect.PostgreSQL{})
+	err := sqlm.Insert(ctx, nil, []*User{
+		{Email: "alice@example.org", Name: "Alice"},
+		{Email: "bob@example.org", Name: ""},
+	}, sqlm.WithDebug())
+	if err != nil && !errors.Is(err, sqlm.ErrNilDB) {
+		fmt.Println(err)
+	}
+
+	_, err = sqlm.Load(ctx, nil, &User{Model: Model{ID: 1}}, sqlm.WithDebug())
+	if err != nil && !errors.Is(err, sqlm.ErrNilDB) {
+		fmt.Println(err)
+	}
+	_, err = sqlm.Exists(ctx, nil, &User{Model: Model{ID: 1}}, sqlm.WithDebug())
+	if err != nil && !errors.Is(err, sqlm.ErrNilDB) {
+		fmt.Println(err)
+	}
+
+	// Partial update: only non-zero fields will be updated.
+	// Here we located the record by unique Email field.
+	err = sqlm.Patch(ctx, nil, &User{
+		Email: "alice@example.org",
+		Name:  "Happy Alice",
+	}, sqlm.WithDebug())
+	if err != nil && !errors.Is(err, sqlm.ErrNilDB) {
+		fmt.Println(err)
+	}
+
+	err = sqlm.Update(ctx, nil, &User{Email: "alice@example.org"}, sqlm.WithDebug())
+	if err != nil && !errors.Is(err, sqlm.ErrNilDB) {
+		fmt.Println(err)
+	}
+
+	// You don't have to set the .Deleted field manually, mapper will set it to current time automatically.
+	// But here we set it to a fixed value to make the example output deterministic.
+	user := &User{Model: Model{ID: 1}}
+	user.Deleted = &time.Time{}
+	err = sqlm.Delete(ctx, nil, user, sqlm.WithDebug())
+	if err != nil && !errors.Is(err, sqlm.ErrNilDB) {
+		fmt.Println(err)
+	}
+	// Output:
+	// [Insert(*sqlm_test.User)] INSERT INTO "users" ("email", "name") VALUES ('alice@example.org', 'Alice'), ('bob@example.org', DEFAULT) ON CONFLICT ("email") DO UPDATE SET "updated" = EXCLUDED."updated", "deleted" = EXCLUDED."deleted", "name" = EXCLUDED."name" RETURNING "id"
+	// [Load(*sqlm_test.User)] SELECT "created", "updated", "email", "name" FROM "users" WHERE "id" = 1 AND "deleted" IS NULL
+	// [Exists(*sqlm_test.User)] SELECT 1 FROM "users" WHERE "id" = 1 AND "deleted" IS NULL
+	// [Patch(*sqlm_test.User)] UPDATE "users" SET "name" = 'Happy Alice' WHERE "email" = 'alice@example.org' AND "deleted" IS NULL
+	// [Update(*sqlm_test.User)] UPDATE "users" SET "updated" = NULL, "name" = '' WHERE "email" = 'alice@example.org' AND "deleted" IS NULL
+	// [Delete(*sqlm_test.User)] UPDATE "users" SET "deleted" = '0001-01-01 00:00:00 +0000 UTC' WHERE "id" = 1 AND "deleted" IS NULL
+}
+
+// Model represents the base model with common fields.
+type Model struct {
+	ID      int        `sqlb:"model;col:id"`
+	Created *time.Time `sqlb:"col:created"`
+	Updated *time.Time `sqlb:"col:updated"`
+	Deleted *time.Time `sqlb:"col:deleted"`
+}
+
+type User struct {
+	Model `sqlb:"table:users"`
+	OrgID int    `sqlb:"col:org_id"`
+	Name  string `sqlb:"col:name"`
+}
+
+type Org struct {
+	Model `sqlb:"table:orgs"`
+	Name  string `sqlb:"col:name"`
+}
+type userListItem struct {
+	User
+	Org
+}
+
+func Example_complexSelect() {
+	Users := sqlb.NewTable("users")
+	Orgs := sqlb.NewTable("orgs")
+	b := sqlb.NewSelectBuilder().
+		From(Users).
+		InnerJoin(Orgs, sqlf.F(
+			"? = ?",
+			// Without code generation, you have to write the column names manually,
+			// which is error-prone and not refactor-friendly.
+			Users.Column("org_id"),
+			Orgs.Column("id"),
+		)).
+		WhereEquals(Orgs.Column("id"), 1).
+		WhereIsNull(Users.Column("deleted"))
+	ctx := sqlb.NewContext(context.Background(), dialect.PostgreSQL{})
+	_, err := sqlm.Select[*userListItem](ctx, nil, b, sqlm.WithDebug())
+	if err != nil && !errors.Is(err, sqlm.ErrNilDB) {
+		fmt.Println(err)
+	}
+	// Output:
+	// [Select(*sqlm_test.userListItem)] SELECT "users"."id", "users"."created", "users"."updated", "users"."deleted", "users"."org_id", "users"."name", "orgs"."id", "orgs"."created", "orgs"."updated", "orgs"."deleted", "orgs"."name" FROM "users" INNER JOIN "orgs" ON "users"."org_id" = "orgs"."id" WHERE "orgs"."id" = 1 AND "users"."deleted" IS NULL
+}
+
+func Example_complexSelectWithCodeGen() {
+
+	// sqlbgen (//go:generate go run github.com/qjebbs/go-sqlb/cmd/sqlbgen .)
+	// will generate the methods for User and Org models based on the struct
+	// tags, e.g.:
+	//
+	// func (*User) Table() sqlb.Table
+	// func (*User) ColumnID() sqlf.Builder
+	// func (*User) ColumnDeleted() sqlf.Builder
+	// ...
+	user := &User{}
+	org := &Org{}
+
+	b := sqlb.NewSelectBuilder().
+		From(user.Table()).
+		InnerJoin(org.Table(), sqlf.F(
+			"? = ?",
+			user.ColumnOrgID(),
+			org.ColumnID(),
+		)).
+		WhereEquals(org.ColumnID(), 1).
+		WhereIsNull(user.ColumnDeleted())
+	ctx := sqlb.NewContext(context.Background(), dialect.PostgreSQL{})
+	_, err := sqlm.Select[*userListItem](ctx, nil, b, sqlm.WithDebug())
+	if err != nil && !errors.Is(err, sqlm.ErrNilDB) {
+		fmt.Println(err)
+	}
+	// Output:
+	// [Select(*sqlm_test.userListItem)] SELECT "users"."id", "users"."created", "users"."updated", "users"."deleted", "users"."org_id", "users"."name", "orgs"."id", "orgs"."created", "orgs"."updated", "orgs"."deleted", "orgs"."name" FROM "users" INNER JOIN "orgs" ON "users"."org_id" = "orgs"."id" WHERE "orgs"."id" = 1 AND "users"."deleted" IS NULL
+}
