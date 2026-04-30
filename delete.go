@@ -8,6 +8,7 @@ import (
 
 	"github.com/qjebbs/go-sqlb"
 	"github.com/qjebbs/go-sqlf/v4"
+	"github.com/qjebbs/go-sqlm/option"
 )
 
 // Delete Deletes a struct T from the database.
@@ -25,7 +26,7 @@ import (
 //
 // It will return an error if it cannot locating a row to avoid accidental full-table delete.
 // To locate the row, it will use non-zero `pk`, `unique`, or `unique_group` fields in priority order.
-func Delete[T any](ctx sqlb.Context, db QueryAble, value T, options ...Option) error {
+func Delete[T any](ctx sqlb.Context, db QueryAble, value T, options ...option.Option) error {
 	err := delete(ctx, db, value, options...)
 	if err != nil {
 		var zero T
@@ -34,14 +35,14 @@ func Delete[T any](ctx sqlb.Context, db QueryAble, value T, options ...Option) e
 	return nil
 }
 
-func delete[T any](ctx sqlb.Context, db QueryAble, value T, options ...Option) error {
+func delete[T any](ctx sqlb.Context, db QueryAble, value T, options ...option.Option) error {
 	if err := checkPtrStruct(value); err != nil {
 		return err
 	}
-	opt := mergeOptions(options...)
+	opt := option.New(options...)
 
 	var debugger *debugger
-	if opt.debug {
+	if opt.Debug.Enabled {
 		debugger = newDebugger("Delete", value, opt)
 		defer debugger.print(ctx.BaseDialect())
 	}
@@ -62,9 +63,9 @@ func delete[T any](ctx sqlb.Context, db QueryAble, value T, options ...Option) e
 	return err
 }
 
-func buildDeleteQueryForStruct[T any](ctx sqlb.Context, value T, opt *Options) (query string, args []any, err error) {
+func buildDeleteQueryForStruct[T any](ctx sqlb.Context, value T, opt *option.Options) (query string, args []any, err error) {
 	if opt == nil {
-		opt = newDefaultOptions()
+		opt = option.New()
 	}
 	info, err := getModelStructInfo(value)
 	if err != nil {

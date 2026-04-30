@@ -8,6 +8,7 @@ import (
 	"github.com/qjebbs/go-sqlb"
 	"github.com/qjebbs/go-sqlf/v4"
 	"github.com/qjebbs/go-sqlm/internal/util"
+	"github.com/qjebbs/go-sqlm/option"
 )
 
 // Load loads a struct T from the database.
@@ -24,7 +25,7 @@ import (
 //   - match: The column will be always included in WHERE clause even if it is zero value.
 //
 // To locate the loading row, it will use non-zero `pk`, `unique`, or `unique_group` fields in priority order.
-func Load[T any](ctx sqlb.Context, db QueryAble, value T, options ...Option) (T, error) {
+func Load[T any](ctx sqlb.Context, db QueryAble, value T, options ...option.Option) (T, error) {
 	r, err := load(ctx, db, value, options...)
 	if err != nil {
 		var zero T
@@ -33,16 +34,16 @@ func Load[T any](ctx sqlb.Context, db QueryAble, value T, options ...Option) (T,
 	return r, nil
 }
 
-func load[T any](ctx sqlb.Context, db QueryAble, value T, options ...Option) (T, error) {
+func load[T any](ctx sqlb.Context, db QueryAble, value T, options ...option.Option) (T, error) {
 	var zero T
 	err := checkPtrStruct(value)
 	if err != nil {
 		return zero, err
 	}
-	opt := mergeOptions(options...)
+	opt := option.New(options...)
 
 	var debugger *debugger
-	if opt.debug {
+	if opt.Debug.Enabled {
 		debugger = newDebugger("Load", value, opt)
 		defer debugger.print(ctx.BaseDialect())
 	}
@@ -69,9 +70,9 @@ func load[T any](ctx sqlb.Context, db QueryAble, value T, options ...Option) (T,
 	return value, nil
 }
 
-func buildLoadQueryForStruct[T any](ctx sqlb.Context, value T, opt *Options) (query string, args []any, dests []fieldInfo, err error) {
+func buildLoadQueryForStruct[T any](ctx sqlb.Context, value T, opt *option.Options) (query string, args []any, dests []fieldInfo, err error) {
 	if opt == nil {
-		opt = newDefaultOptions()
+		opt = option.New()
 	}
 	info, err := getModelStructInfo(value)
 	if err != nil {

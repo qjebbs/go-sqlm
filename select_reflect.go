@@ -8,16 +8,17 @@ import (
 	"github.com/qjebbs/go-sqlb/dialect"
 	"github.com/qjebbs/go-sqlf/v4"
 	"github.com/qjebbs/go-sqlm/internal/util"
+	"github.com/qjebbs/go-sqlm/option"
 	"github.com/qjebbs/go-sqlm/tag"
 )
 
-func _selectReflect[T any](ctx sqlb.Context, db QueryAble, zero T, b SelectBuilder, options ...Option) ([]T, error) {
+func _selectReflect[T any](ctx sqlb.Context, db QueryAble, zero T, b SelectBuilder, options ...option.Option) ([]T, error) {
 	if err := checkPtrStruct(zero); err != nil {
 		return nil, err
 	}
-	opt := mergeOptions(options...)
+	opt := option.New(options...)
 	var debugger *debugger
-	if opt.debug {
+	if opt.Debug.Enabled {
 		debugger = newDebugger("Select", zero, opt)
 		defer debugger.print(ctx.BaseDialect())
 	}
@@ -68,9 +69,9 @@ func prepareScanDestinations[T any](dest T, dests []fieldInfo) (T, []any) {
 	return dest, fields
 }
 
-func buildSelectQueryForStruct[T any](ctx sqlb.Context, b SelectBuilder, opt *Options) (query string, args []any, dests []fieldInfo, err error) {
+func buildSelectQueryForStruct[T any](ctx sqlb.Context, b SelectBuilder, opt *option.Options) (query string, args []any, dests []fieldInfo, err error) {
 	if opt == nil {
-		opt = newDefaultOptions()
+		opt = option.New()
 	}
 	var zero T
 	info, err := getStructInfo(zero)
@@ -89,12 +90,12 @@ func buildSelectQueryForStruct[T any](ctx sqlb.Context, b SelectBuilder, opt *Op
 	return query, args, dests, nil
 }
 
-func buildSelectInfo(d dialect.Dialect, opt *Options, f *structInfo) (columns []sqlf.Builder, dests []fieldInfo, err error) {
+func buildSelectInfo(d dialect.Dialect, opt *option.Options, f *structInfo) (columns []sqlf.Builder, dests []fieldInfo, err error) {
 	for _, col := range f.columns {
 		if col.Column == "" && col.Select == "" {
 			continue
 		}
-		if !opt.selectTags.Match(col.SelectOn) {
+		if len(col.SelectOn) > 0 && !opt.Select.Tags.ContainsAny(col.SelectOn) {
 			continue
 		}
 
@@ -108,7 +109,7 @@ func buildSelectInfo(d dialect.Dialect, opt *Options, f *structInfo) (columns []
 	return columns, dests, nil
 }
 
-func buildSelectColumn(d dialect.Dialect, tags *tag.Info, rtype reflect.Type, opt *Options) (sqlf.Builder, error) {
+func buildSelectColumn(d dialect.Dialect, tags *tag.Info, rtype reflect.Type, opt *option.Options) (sqlf.Builder, error) {
 	var column sqlf.Builder
 	// sel tag takes precedence over col tag
 	if tags.Select != "" {
@@ -125,7 +126,7 @@ func buildSelectColumn(d dialect.Dialect, tags *tag.Info, rtype reflect.Type, op
 	} else {
 		column = sqlf.F("?.?", sqlb.NewTable(tags.Table), sqlf.Identifier(tags.Column))
 	}
-	if opt.enableNullZero(tags.Table) &&
+	if opt.Select.CoalesceTables.Contains(tags.Table) &&
 		dialect.CheckNullCoalesceable(rtype) {
 		if c, err := d.NullCoalesce(column, rtype); err == nil {
 			if c != nil {

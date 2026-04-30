@@ -6,6 +6,7 @@ import (
 
 	"github.com/qjebbs/go-sqlb"
 	"github.com/qjebbs/go-sqlf/v4"
+	"github.com/qjebbs/go-sqlm/option"
 )
 
 var _ SelectBuilder = (*sqlb.SelectBuilder)(nil)
@@ -26,7 +27,7 @@ type SelectLimitBuilder interface {
 // SelectOne executes the query and scans the result into a struct T.
 //
 // See Select() for supported struct tags.
-func SelectOne[T any](ctx sqlb.Context, db QueryAble, b SelectLimitBuilder, options ...Option) (T, error) {
+func SelectOne[T any](ctx sqlb.Context, db QueryAble, b SelectLimitBuilder, options ...option.Option) (T, error) {
 	b.SetLimit(1)
 	r, err := Select[T](ctx, db, b, options...)
 	if err != nil {
@@ -52,7 +53,7 @@ func SelectOne[T any](ctx sqlb.Context, db QueryAble, b SelectLimitBuilder, opti
 //   - sel<:expr>: Specify expression to select for this field. It's used together with `from` key to declare tables used in the expression, e.g. “sel:COALESCE(?.bar,?.baz);from:f,b;`, which is required by dependency analysis.
 //   - from<:name[,names]...>: Works with 'sel', it accepts multiple Applied-Table-Name, comma-separated.
 //   - dive: For struct fields, dive into and scan its fields. e.g. `dive;`
-func Select[T any](ctx sqlb.Context, db QueryAble, b SelectBuilder, options ...Option) ([]T, error) {
+func Select[T any](ctx sqlb.Context, db QueryAble, b SelectBuilder, options ...option.Option) ([]T, error) {
 	r, err := _select[T](ctx, db, b, options...)
 	if err != nil {
 		var zero T
@@ -61,7 +62,7 @@ func Select[T any](ctx sqlb.Context, db QueryAble, b SelectBuilder, options ...O
 	return r, nil
 }
 
-func _select[T any](ctx sqlb.Context, db QueryAble, b SelectBuilder, options ...Option) ([]T, error) {
+func _select[T any](ctx sqlb.Context, db QueryAble, b SelectBuilder, options ...option.Option) ([]T, error) {
 	var zero T
 	m, ok := any(zero).(selectable[T])
 	if !ok {

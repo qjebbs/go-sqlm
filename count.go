@@ -3,10 +3,11 @@ package sqlm
 import (
 	"github.com/qjebbs/go-sqlb"
 	"github.com/qjebbs/go-sqlf/v4"
+	"github.com/qjebbs/go-sqlm/option"
 )
 
 // Count builds and executes the query to count records into an int64.
-func Count(ctx sqlb.Context, db QueryAble, b SelectBuilder, options ...Option) (int64, error) {
+func Count(ctx sqlb.Context, db QueryAble, b SelectBuilder, options ...option.Option) (int64, error) {
 	r, err := _count(ctx, db, b, nil, options...)
 	if err != nil {
 		return 0, wrapErrWithDebugName("Count", b, err)
@@ -15,7 +16,7 @@ func Count(ctx sqlb.Context, db QueryAble, b SelectBuilder, options ...Option) (
 }
 
 // CountColumn builds and executes the query to count records based on the specified column into an int64.
-func CountColumn(ctx sqlb.Context, db QueryAble, b SelectBuilder, column sqlf.Builder, options ...Option) (int64, error) {
+func CountColumn(ctx sqlb.Context, db QueryAble, b SelectBuilder, column sqlf.Builder, options ...option.Option) (int64, error) {
 	r, err := _count(ctx, db, b, column, options...)
 	if err != nil {
 		return 0, wrapErrWithDebugName("CountColumn", b, err)
@@ -23,10 +24,10 @@ func CountColumn(ctx sqlb.Context, db QueryAble, b SelectBuilder, column sqlf.Bu
 	return r, nil
 }
 
-func _count(ctx sqlb.Context, db QueryAble, b SelectBuilder, column sqlf.Builder, options ...Option) (int64, error) {
-	opt := mergeOptions(options...)
+func _count(ctx sqlb.Context, db QueryAble, b SelectBuilder, column sqlf.Builder, options ...option.Option) (int64, error) {
+	opt := option.New(options...)
 	var debugger *debugger
-	if opt.debug {
+	if opt.Debug.Enabled {
 		debugger = newDebugger("Count", b, opt)
 		defer debugger.print(ctx.BaseDialect())
 	}

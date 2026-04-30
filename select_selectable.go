@@ -6,6 +6,7 @@ import (
 	"github.com/qjebbs/go-sqlb"
 	"github.com/qjebbs/go-sqlb/dialect"
 	"github.com/qjebbs/go-sqlf/v4"
+	"github.com/qjebbs/go-sqlm/option"
 	"github.com/qjebbs/go-sqlm/tag"
 )
 
@@ -25,10 +26,10 @@ type selectable[T any] interface {
 	FillFields(target []any, indexes []int)
 }
 
-func _selectSelectable[T any](ctx sqlb.Context, db QueryAble, b SelectBuilder, model selectable[T], options ...Option) ([]T, error) {
-	opt := mergeOptions(options...)
+func _selectSelectable[T any](ctx sqlb.Context, db QueryAble, b SelectBuilder, model selectable[T], options ...option.Option) ([]T, error) {
+	opt := option.New(options...)
 	var debugger *debugger
-	if opt.debug {
+	if opt.Debug.Enabled {
 		debugger = newDebugger("Select", model, opt)
 		defer debugger.print(ctx.BaseDialect())
 	}
@@ -62,9 +63,9 @@ func _selectSelectable[T any](ctx sqlb.Context, db QueryAble, b SelectBuilder, m
 	})
 }
 
-func buildSelectQueryForModel[T any](ctx sqlb.Context, d dialect.Dialect, b SelectBuilder, model selectable[T], opt *Options) (query string, args []any, dests []int, err error) {
+func buildSelectQueryForModel[T any](ctx sqlb.Context, d dialect.Dialect, b SelectBuilder, model selectable[T], opt *option.Options) (query string, args []any, dests []int, err error) {
 	if opt == nil {
-		opt = newDefaultOptions()
+		opt = option.New()
 	}
 
 	tags := model.Tags()
@@ -75,7 +76,7 @@ func buildSelectQueryForModel[T any](ctx sqlb.Context, d dialect.Dialect, b Sele
 		if tag.Column == "" && tag.Select == "" {
 			continue
 		}
-		if !opt.selectTags.Match(tag.SelectOn) {
+		if len(tag.SelectOn) > 0 && !opt.Select.Tags.ContainsAny(tag.SelectOn) {
 			continue
 		}
 		dests = append(dests, i)

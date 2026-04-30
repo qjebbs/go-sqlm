@@ -12,6 +12,7 @@ import (
 	"github.com/qjebbs/go-sqlb/dialect"
 	"github.com/qjebbs/go-sqlf/v4"
 	"github.com/qjebbs/go-sqlm"
+	"github.com/qjebbs/go-sqlm/option"
 )
 
 func Example_cRUD() {
@@ -50,16 +51,16 @@ func Example_cRUD() {
 	err := sqlm.Insert(ctx, nil, []*User{
 		{Email: "alice@example.org", Name: "Alice"},
 		{Email: "bob@example.org", Name: ""},
-	}, sqlm.WithDebug())
+	}, option.WithDebug())
 	if err != nil && !errors.Is(err, sqlm.ErrNilDB) {
 		fmt.Println(err)
 	}
 
-	_, err = sqlm.Load(ctx, nil, &User{Model: Model{ID: 1}}, sqlm.WithDebug())
+	_, err = sqlm.Load(ctx, nil, &User{Model: Model{ID: 1}}, option.WithDebug())
 	if err != nil && !errors.Is(err, sqlm.ErrNilDB) {
 		fmt.Println(err)
 	}
-	_, err = sqlm.Exists(ctx, nil, &User{Model: Model{ID: 1}}, sqlm.WithDebug())
+	_, err = sqlm.Exists(ctx, nil, &User{Model: Model{ID: 1}}, option.WithDebug())
 	if err != nil && !errors.Is(err, sqlm.ErrNilDB) {
 		fmt.Println(err)
 	}
@@ -69,12 +70,12 @@ func Example_cRUD() {
 	err = sqlm.Patch(ctx, nil, &User{
 		Email: "alice@example.org",
 		Name:  "Happy Alice",
-	}, sqlm.WithDebug())
+	}, option.WithDebug())
 	if err != nil && !errors.Is(err, sqlm.ErrNilDB) {
 		fmt.Println(err)
 	}
 
-	err = sqlm.Update(ctx, nil, &User{Email: "alice@example.org"}, sqlm.WithDebug())
+	err = sqlm.Update(ctx, nil, &User{Email: "alice@example.org"}, option.WithDebug())
 	if err != nil && !errors.Is(err, sqlm.ErrNilDB) {
 		fmt.Println(err)
 	}
@@ -83,7 +84,7 @@ func Example_cRUD() {
 	// But here we set it to a fixed value to make the example output deterministic.
 	user := &User{Model: Model{ID: 1}}
 	user.Deleted = &time.Time{}
-	err = sqlm.Delete(ctx, nil, user, sqlm.WithDebug())
+	err = sqlm.Delete(ctx, nil, user, option.WithDebug())
 	if err != nil && !errors.Is(err, sqlm.ErrNilDB) {
 		fmt.Println(err)
 	}
@@ -134,7 +135,7 @@ func Example_complexSelect() {
 		WhereEquals(Orgs.Column("id"), 1).
 		WhereIsNull(Users.Column("deleted"))
 	ctx := sqlb.NewContext(context.Background(), dialect.PostgreSQL{})
-	_, err := sqlm.Select[*userListItem](ctx, nil, b, sqlm.WithDebug())
+	_, err := sqlm.Select[*userListItem](ctx, nil, b, option.WithDebug())
 	if err != nil && !errors.Is(err, sqlm.ErrNilDB) {
 		fmt.Println(err)
 	}
@@ -165,7 +166,7 @@ func Example_complexSelectWithCodeGen() {
 		WhereEquals(org.ColumnID(), 1).
 		WhereIsNull(user.ColumnDeleted())
 	ctx := sqlb.NewContext(context.Background(), dialect.PostgreSQL{})
-	_, err := sqlm.Select[*userListItem](ctx, nil, b, sqlm.WithDebug())
+	_, err := sqlm.Select[*userListItem](ctx, nil, b, option.WithDebug())
 	if err != nil && !errors.Is(err, sqlm.ErrNilDB) {
 		fmt.Println(err)
 	}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/qjebbs/go-sqlf/v4/dialect"
 	"github.com/qjebbs/go-sqlf/v4/util"
+	"github.com/qjebbs/go-sqlm/option"
 )
 
 type debugger struct {
@@ -24,14 +25,14 @@ type debugger struct {
 	start time.Time
 }
 
-func newDebugger(funcName string, value any, opt *Options) *debugger {
-	if opt.debugWriter == nil {
-		opt.debugWriter = os.Stdout
+func newDebugger(funcName string, value any, opt *option.Options) *debugger {
+	if opt.Debug.Writer == nil {
+		opt.Debug.Writer = os.Stdout
 	}
 	return &debugger{
 		name:        fmt.Sprintf("%s(%T)", funcName, value),
-		measureTime: opt.debugTime,
-		writer:      opt.debugWriter,
+		measureTime: opt.Debug.Time,
+		writer:      opt.Debug.Writer,
 		start:       time.Now(),
 	}
 }

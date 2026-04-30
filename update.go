@@ -7,6 +7,7 @@ import (
 
 	"github.com/qjebbs/go-sqlb"
 	"github.com/qjebbs/go-sqlf/v4"
+	"github.com/qjebbs/go-sqlm/option"
 )
 
 // Update updates a single struct into the database.
@@ -26,24 +27,24 @@ import (
 //
 // It will return an error if it cannot locating a row to avoid accidental full-table update.
 // To locate the row, it will use non-zero `pk`, `unique`, or `unique_group` fields in priority order.
-func Update[T any](ctx sqlb.Context, db QueryAble, value T, options ...Option) error {
+func Update[T any](ctx sqlb.Context, db QueryAble, value T, options ...option.Option) error {
 	return wrapErrWithDebugName("Update", value, update(ctx, db, value, true, options...))
 }
 
 // Patch is similar to Update(), but it only updates non-zero fields of the struct.
 //
 // See Update() for more details.
-func Patch[T any](ctx sqlb.Context, db QueryAble, value T, options ...Option) error {
+func Patch[T any](ctx sqlb.Context, db QueryAble, value T, options ...option.Option) error {
 	return wrapErrWithDebugName("Patch", value, update(ctx, db, value, false, options...))
 }
 
-func update[T any](ctx sqlb.Context, db QueryAble, value T, updateAll bool, options ...Option) error {
+func update[T any](ctx sqlb.Context, db QueryAble, value T, updateAll bool, options ...option.Option) error {
 	if err := checkStruct(value); err != nil {
 		return err
 	}
-	opt := mergeOptions(options...)
+	opt := option.New(options...)
 	var debugger *debugger
-	if opt.debug {
+	if opt.Debug.Enabled {
 		if updateAll {
 			debugger = newDebugger("Update", value, opt)
 		} else {
@@ -81,9 +82,9 @@ func update[T any](ctx sqlb.Context, db QueryAble, value T, updateAll bool, opti
 	return err
 }
 
-func buildUpdateQueryForStruct[T any](ctx sqlb.Context, value T, updateAll bool, opt *Options) (query string, args []any, err error) {
+func buildUpdateQueryForStruct[T any](ctx sqlb.Context, value T, updateAll bool, opt *option.Options) (query string, args []any, err error) {
 	if opt == nil {
-		opt = newDefaultOptions()
+		opt = option.New()
 	}
 
 	b := sqlb.NewUpdateBuilder()

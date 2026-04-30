@@ -5,13 +5,14 @@ import (
 
 	"github.com/qjebbs/go-sqlb"
 	"github.com/qjebbs/go-sqlf/v4"
+	"github.com/qjebbs/go-sqlm/option"
 )
 
 // Exec Executes a sqlf.Builder query against the database.
-func Exec(ctx sqlb.Context, db QueryAble, b sqlf.Builder, options ...Option) (sql.Result, error) {
-	opt := mergeOptions(options...)
+func Exec(ctx sqlb.Context, db QueryAble, b sqlf.Builder, options ...option.Option) (sql.Result, error) {
+	opt := option.New(options...)
 	var debugger *debugger
-	if opt.debug {
+	if opt.Debug.Enabled {
 		debugger = newDebugger("Exec", b, opt)
 		defer debugger.print(ctx.BaseDialect())
 	}
