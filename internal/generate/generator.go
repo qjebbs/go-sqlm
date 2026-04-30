@@ -75,7 +75,7 @@ func (g *Generator) Generate(patterns []string) error {
 			return fmt.Errorf("failed to read directory %s: %v", dir, err)
 		}
 		for _, file := range files {
-			if !file.IsDir() && (strings.HasSuffix(file.Name(), "_sqlb_gen.go") || strings.HasSuffix(file.Name(), "_sqlb_gen_test.go")) {
+			if !file.IsDir() && (strings.HasSuffix(file.Name(), "_sqlm_gen.go") || strings.HasSuffix(file.Name(), "_sqlm_gen_test.go")) {
 				existingGeneratedFiles[filepath.Join(dir, file.Name())] = struct{}{}
 			}
 		}
@@ -174,9 +174,9 @@ func (g *Generator) write(pkg *packages.Package, structs []StructInfo, filePath 
 	var outputName string
 
 	if strings.HasSuffix(pkg.Name, "_test") {
-		outputName = strings.TrimSuffix(filePath, "_test.go") + "_sqlb_gen_test.go"
+		outputName = strings.TrimSuffix(filePath, "_test.go") + "_sqlm_gen_test.go"
 	} else {
-		outputName = strings.TrimSuffix(filePath, ".go") + "_sqlb_gen.go"
+		outputName = strings.TrimSuffix(filePath, ".go") + "_sqlm_gen.go"
 	}
 	err = os.WriteFile(outputName, formatted, 0644)
 	if err != nil {

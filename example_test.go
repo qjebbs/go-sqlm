@@ -1,6 +1,6 @@
 package sqlm_test
 
-//go:generate go run github.com/qjebbs/go-sqlm/cmd/sqlbgen -selectable .
+//go:generate go run github.com/qjebbs/go-sqlm/cmd/sqlmgen -selectable .
 
 import (
 	"context"
@@ -145,7 +145,7 @@ func Example_complexSelect() {
 
 func Example_complexSelectWithCodeGen() {
 
-	// sqlbgen (//go:generate go run github.com/qjebbs/go-sqlb/cmd/sqlbgen .)
+	// sqlmgen (//go:generate go run github.com/qjebbs/go-sqlm/cmd/sqlmgen .)
 	// will generate the methods for User and Org models based on the struct
 	// tags, e.g.:
 	//
