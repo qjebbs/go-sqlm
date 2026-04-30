@@ -1,9 +1,9 @@
 github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
-github.com/qjebbs/go-sqlb v1.0.0-alpha.26 h1:Po37xgEuff0XdSQdZM1gK1okWrVChko8bdkZ08vmxJQ=
-github.com/qjebbs/go-sqlb v1.0.0-alpha.26/go.mod h1:tvTPk08vgISmUbaS+hCe9ES8HNTWo9lunA3dipVSUSw=
-github.com/qjebbs/go-sqlf/v4 v4.0.0-alpha.20 h1:J7KCGjR2cz1mtowLxxctlwpbOyH0neV33P4OoBXgcPk=
-github.com/qjebbs/go-sqlf/v4 v4.0.0-alpha.20/go.mod h1:n1lq2YneenksE6oOWoVFaNc9MUpch7ADoadoqaJOZK8=
+github.com/qjebbs/go-sqlb v1.0.0-beta.1 h1:Cq2m3VSyDGwqUbdiYrtbN/kyZt4GHmbsOqIX/QR9zig=
+github.com/qjebbs/go-sqlb v1.0.0-beta.1/go.mod h1:aCDh4dTTNsKLHwyI8ue5jGa7970SO7sZMbNgoqsXSDk=
+github.com/qjebbs/go-sqlf/v4 v4.0.0-beta.1 h1:oaS5EjpYz3doAViuquFpXho1swfowIPeXlLD/aMoFDY=
+github.com/qjebbs/go-sqlf/v4 v4.0.0-beta.1/go.mod h1:n1lq2YneenksE6oOWoVFaNc9MUpch7ADoadoqaJOZK8=
 golang.org/x/mod v0.35.0 h1:Ww1D637e6Pg+Zb2KrWfHQUnH2dQRLBQyAtpr/haaJeM=
 golang.org/x/mod v0.35.0/go.mod h1:+GwiRhIInF8wPm+4AoT6L0FA1QWAad3OMdTRx4tFYlU=
 golang.org/x/sync v0.20.0 h1:e0PTpb7pjO8GAtTs2dQ6jYa5BWYlMuX047Dco/pItO4=
