@@ -144,7 +144,6 @@ func Example_complexSelect() {
 }
 
 func Example_complexSelectWithCodeGen() {
-
 	// sqlmgen (//go:generate go run github.com/qjebbs/go-sqlm/cmd/sqlmgen .)
 	// will generate the methods for User and Org models based on the struct
 	// tags, e.g.:
