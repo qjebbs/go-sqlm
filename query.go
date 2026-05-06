@@ -9,11 +9,10 @@ import (
 	"github.com/qjebbs/go-sqlm/option"
 )
 
-// SelectOneManual executes a query and scans the results using a provider function.
-// The provider fn is called for each row to get the destination value and scan fields.
-// Unlike SelectOne, it doesn't limit the query to 1 row automatically.
-func SelectOneManual[T any](ctx sqlb.Context, db QueryAble, b sqlf.Builder, fn func() (T, []any), options ...option.Option) (T, error) {
-	r, err := selectManual(ctx, "SelectOneManual", db, b, fn, options...)
+// QueryOne is like Query but expects exactly one result.
+// It returns sql.ErrNoRows if there are no results, and an error if there are more than one result.
+func QueryOne[T any](ctx sqlb.Context, db Querier, b sqlf.Builder, fn func() (T, []any), options ...option.Option) (T, error) {
+	r, err := scanBuilder(ctx, "QueryOne", db, b, fn, options...)
 	if err != nil {
 		var zero T
 		return zero, err
@@ -22,16 +21,23 @@ func SelectOneManual[T any](ctx sqlb.Context, db QueryAble, b sqlf.Builder, fn f
 		var zero T
 		return zero, sql.ErrNoRows
 	}
+	if len(r) > 1 {
+		var zero T
+		return zero, ErrMultipleRows
+	}
 	return r[0], nil
 }
 
-// SelectManual executes a query and scans the results using a provider function.
+// Query executes a query from builder and scans the results using a provider function.
 // The provider fn is called for each row to get the destination value and scan fields.
-func SelectManual[T any](ctx sqlb.Context, db QueryAble, b sqlf.Builder, fn func() (T, []any), options ...option.Option) ([]T, error) {
-	return selectManual(ctx, "SelectManual", db, b, fn, options...)
+//
+// Unlike Select, it doesn't require the builder to be a SelectBuilder.
+// It's useful when you want to execute a raw query or a non-select query (like INSERT..RETURNING) with scanning results.
+func Query[T any](ctx sqlb.Context, db Querier, b sqlf.Builder, fn func() (T, []any), options ...option.Option) ([]T, error) {
+	return scanBuilder(ctx, "Query", db, b, fn, options...)
 }
 
-func selectManual[T any](ctx sqlb.Context, name string, db QueryAble, b sqlf.Builder, fn func() (T, []any), options ...option.Option) ([]T, error) {
+func scanBuilder[T any](ctx sqlb.Context, name string, db Querier, b sqlf.Builder, fn func() (T, []any), options ...option.Option) ([]T, error) {
 	opt := option.New(options...)
 	var debugger *debugger
 	if opt.Debug.Enabled {
@@ -49,15 +55,15 @@ func selectManual[T any](ctx sqlb.Context, name string, db QueryAble, b sqlf.Bui
 	if db == nil {
 		return nil, ErrNilDB
 	}
-	r, err := scan(ctx, db, query, args, debugger, fn)
+	r, err := scanQuery(ctx, db, query, args, debugger, fn)
 	if err != nil {
 		return nil, err
 	}
 	return r, nil
 }
 
-// scan scans query rows with scanner
-func scan[T any](ctx context.Context, db QueryAble, query string, args []any, debugger *debugger, fn func() (T, []any)) ([]T, error) {
+// scanQuery scans query rows with scanner
+func scanQuery[T any](ctx context.Context, db Querier, query string, args []any, debugger *debugger, fn func() (T, []any)) ([]T, error) {
 	rows, err := db.Query(query, args...)
 	if debugger != nil {
 		debugger.onExec(err)

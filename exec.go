@@ -9,7 +9,7 @@ import (
 )
 
 // Exec Executes a sqlf.Builder query against the database.
-func Exec(ctx sqlb.Context, db QueryAble, b sqlf.Builder, options ...option.Option) (sql.Result, error) {
+func Exec(ctx sqlb.Context, db Querier, b sqlf.Builder, options ...option.Option) (sql.Result, error) {
 	opt := option.New(options...)
 	var debugger *debugger
 	if opt.Debug.Enabled {

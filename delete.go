@@ -26,7 +26,7 @@ import (
 //
 // It will return an error if it cannot locating a row to avoid accidental full-table delete.
 // To locate the row, it will use non-zero `pk`, `unique`, or `unique_group` fields in priority order.
-func Delete[T any](ctx sqlb.Context, db QueryAble, value T, options ...option.Option) error {
+func Delete[T any](ctx sqlb.Context, db Querier, value T, options ...option.Option) error {
 	err := delete(ctx, db, value, options...)
 	if err != nil {
 		var zero T
@@ -35,7 +35,7 @@ func Delete[T any](ctx sqlb.Context, db QueryAble, value T, options ...option.Op
 	return nil
 }
 
-func delete[T any](ctx sqlb.Context, db QueryAble, value T, options ...option.Option) error {
+func delete[T any](ctx sqlb.Context, db Querier, value T, options ...option.Option) error {
 	if err := checkPtrStruct(value); err != nil {
 		return err
 	}

@@ -17,7 +17,7 @@ import (
 // If no returning columns are specified, it only executes the insert query.
 //
 // See Insert() for supported struct tags.
-func InsertOne[T any](ctx sqlb.Context, db QueryAble, value T, options ...option.Option) error {
+func InsertOne[T any](ctx sqlb.Context, db Querier, value T, options ...option.Option) error {
 	return Insert(ctx, db, []T{value}, options...)
 }
 
@@ -46,7 +46,7 @@ func InsertOne[T any](ctx sqlb.Context, db QueryAble, value T, options ...option
 //   - returning: Mark the field to be included in RETURNING clause.
 //   - conflict_on[:unique_group name]: If value is ommited, declare current unique column or current unique-group the conflict detection column(s). If there is any ambiguity, it must be explicitly specified, e.g. `unique_group:a,b,c;conflict_on:a`.
 //   - conflict_set: Update the field on conflict. It's equivalent to `SET <column>=EXCLUDED.<column>` in ON CONFLICT clause if not specified with value, and can be specified with expression, e.g. `conflict_set:NULL`, which is equivalent to `SET <column>=NULL`.
-func Insert[T any](ctx sqlb.Context, db QueryAble, values []T, options ...option.Option) error {
+func Insert[T any](ctx sqlb.Context, db Querier, values []T, options ...option.Option) error {
 	if len(values) == 0 {
 		return nil
 	}
@@ -59,7 +59,7 @@ func Insert[T any](ctx sqlb.Context, db QueryAble, values []T, options ...option
 	return wrapErrWithDebugName("Insert", values[0], insert(ctx, db, values, opt))
 }
 
-func insertOneByOne[T any](ctx sqlb.Context, db QueryAble, values []T, opt *option.Options) error {
+func insertOneByOne[T any](ctx sqlb.Context, db Querier, values []T, opt *option.Options) error {
 	for _, v := range values {
 		if err := insert(ctx, db, []T{v}, opt); err != nil {
 			return err
@@ -68,7 +68,7 @@ func insertOneByOne[T any](ctx sqlb.Context, db QueryAble, values []T, opt *opti
 	return nil
 }
 
-func insert[T any](ctx sqlb.Context, db QueryAble, values []T, opt *option.Options) error {
+func insert[T any](ctx sqlb.Context, db Querier, values []T, opt *option.Options) error {
 	if err := checkPtrStruct(values[0]); err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func insert[T any](ctx sqlb.Context, db QueryAble, values []T, opt *option.Optio
 		return err
 	}
 	index := 0
-	_, err = scan(ctx, db, queryStr, args, debugger, func() (T, []any) {
+	_, err = scanQuery(ctx, db, queryStr, args, debugger, func() (T, []any) {
 		dest := values[index]
 		index++
 		dest, fields := prepareScanDestinations(dest, returningFields)

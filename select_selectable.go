@@ -26,7 +26,7 @@ type selectable[T any] interface {
 	FillFields(target []any, indexes []int)
 }
 
-func _selectSelectable[T any](ctx sqlb.Context, db QueryAble, b SelectBuilder, model selectable[T], options ...option.Option) ([]T, error) {
+func _selectSelectable[T any](ctx sqlb.Context, db Querier, b SelectBuilder, model selectable[T], options ...option.Option) ([]T, error) {
 	opt := option.New(options...)
 	var debugger *debugger
 	if opt.Debug.Enabled {
@@ -43,7 +43,7 @@ func _selectSelectable[T any](ctx sqlb.Context, db QueryAble, b SelectBuilder, m
 	if db == nil {
 		return nil, ErrNilDB
 	}
-	return scan(ctx, db, queryStr, args, debugger, func() (T, []any) {
+	return scanQuery(ctx, db, queryStr, args, debugger, func() (T, []any) {
 		m := model.New()
 		values := make([]any, len(indexes))
 		// Prepare the slice of destinations for sql.Rows.Scan().

@@ -25,7 +25,7 @@ import (
 //   - match: The column will be always included in WHERE clause even if it is zero value.
 //
 // To locate the loading row, it will use non-zero `pk`, `unique`, or `unique_group` fields in priority order.
-func Load[T any](ctx sqlb.Context, db QueryAble, value T, options ...option.Option) (T, error) {
+func Load[T any](ctx sqlb.Context, db Querier, value T, options ...option.Option) (T, error) {
 	r, err := load(ctx, db, value, options...)
 	if err != nil {
 		var zero T
@@ -34,7 +34,7 @@ func Load[T any](ctx sqlb.Context, db QueryAble, value T, options ...option.Opti
 	return r, nil
 }
 
-func load[T any](ctx sqlb.Context, db QueryAble, value T, options ...option.Option) (T, error) {
+func load[T any](ctx sqlb.Context, db Querier, value T, options ...option.Option) (T, error) {
 	var zero T
 	err := checkPtrStruct(value)
 	if err != nil {
@@ -57,7 +57,7 @@ func load[T any](ctx sqlb.Context, db QueryAble, value T, options ...option.Opti
 	if db == nil {
 		return zero, ErrNilDB
 	}
-	r, err := scan(ctx, db, query, args, debugger, func() (T, []any) {
+	r, err := scanQuery(ctx, db, query, args, debugger, func() (T, []any) {
 		dest, fields := prepareScanDestinations(value, dests)
 		return dest, fields
 	})

@@ -9,7 +9,7 @@ import (
 // Exists checks whether a record exists in the database.
 //
 // See Load() for struct tag syntax and locating rules.
-func Exists[T any](ctx sqlb.Context, db QueryAble, value T, options ...option.Option) (bool, error) {
+func Exists[T any](ctx sqlb.Context, db Querier, value T, options ...option.Option) (bool, error) {
 	r, err := exists(ctx, db, value, options...)
 	if err != nil {
 		var zero T
@@ -18,7 +18,7 @@ func Exists[T any](ctx sqlb.Context, db QueryAble, value T, options ...option.Op
 	return r, nil
 }
 
-func exists[T any](ctx sqlb.Context, db QueryAble, value T, options ...option.Option) (bool, error) {
+func exists[T any](ctx sqlb.Context, db Querier, value T, options ...option.Option) (bool, error) {
 	if err := checkStruct(value); err != nil {
 		return false, err
 	}

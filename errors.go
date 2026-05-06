@@ -2,7 +2,8 @@ package sqlm
 
 import "errors"
 
+// errors
 var (
-	// ErrNilDB is returned when the provided database handle is nil.
-	ErrNilDB = errors.New("db is nil")
+	ErrNilDB        = errors.New("db is nil")
+	ErrMultipleRows = errors.New("sql: multiple rows in result set")
 )

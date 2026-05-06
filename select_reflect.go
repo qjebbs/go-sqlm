@@ -12,7 +12,7 @@ import (
 	"github.com/qjebbs/go-sqlm/tag"
 )
 
-func _selectReflect[T any](ctx sqlb.Context, db QueryAble, zero T, b SelectBuilder, options ...option.Option) ([]T, error) {
+func _selectReflect[T any](ctx sqlb.Context, db Querier, zero T, b SelectBuilder, options ...option.Option) ([]T, error) {
 	if err := checkPtrStruct(zero); err != nil {
 		return nil, err
 	}
@@ -32,7 +32,7 @@ func _selectReflect[T any](ctx sqlb.Context, db QueryAble, zero T, b SelectBuild
 	if db == nil {
 		return nil, ErrNilDB
 	}
-	return scan(ctx, db, queryStr, args, debugger, func() (T, []any) {
+	return scanQuery(ctx, db, queryStr, args, debugger, func() (T, []any) {
 		var dest T
 		return prepareScanDestinations(dest, dests)
 	})
