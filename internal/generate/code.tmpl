@@ -8,7 +8,6 @@ import (
 
     {{- if .HasModel }}
     "github.com/qjebbs/go-sqlb"
-    "github.com/qjebbs/go-sqlf/v4"
     {{- end }}
     {{- if .HasSelect }}
     "github.com/qjebbs/go-sqlm/tag"
@@ -76,8 +75,8 @@ import (
 
 		{{ $model := . }}
 		{{ range .Model.Columns }}
-			func (s *{{ $model.Name }}) Column{{ .FieldName }}(alias ...string) sqlf.Builder {
-				return sqlf.F("?.?", sqlb.NewTable("{{ .TableName }}", alias...), sqlf.Identifier("{{ .ColumnName }}"))
+			func (s *{{ $model.Name }}) Column{{ .FieldName }}(alias ...string) *sqlb.Column {
+				return sqlb.NewColumn(sqlb.NewTable("{{ .TableName }}", alias...), "{{ .ColumnName }}")
 			}
 		{{ end }}
 	{{ end }}
